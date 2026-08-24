@@ -1,0 +1,310 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  AUTHORITY
+  FIELD_OFFICER
+  CITIZEN
+}
+
+enum RiskLevel {
+  LOW
+  MODERATE
+  HIGH
+  VERY_HIGH
+}
+
+enum AlertLevel {
+  INFO
+  WATCH
+  WARNING
+  CRITICAL
+}
+
+enum RoadStatus {
+  OPEN
+  AT_RISK
+  BLOCKED
+  PARTIALLY_BLOCKED
+  UNKNOWN
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCING
+  SYNCED
+  FAILED
+}
+
+enum DataQuality {
+  LIVE
+  HISTORICAL
+  SIMULATED
+  DEMO
+}
+
+enum IncidentType {
+  CRACK
+  SLOPE_MOVEMENT
+  ROCKFALL
+  MUD_DEBRIS
+  ROAD_BLOCKAGE
+  WATER_OVERFLOW
+  OTHER
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  role         Role     @default(CITIZEN)
+  phone        String?
+  district     String?
+  state        String?
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  fieldReports  FieldReport[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model RiskZone {
+  id             String     @id @default(uuid()) @db.Uuid
+  name           String
+  state          String
+  district       String
+  geometry       Json
+  riskScore      Int?       @map("risk_score")
+  riskLevel      RiskLevel? @map("risk_level")
+  rainfall       Float?
+  soilMoisture   Float?     @map("soil_moisture")
+  slope          Float?
+  elevation      Float?
+  affectedRoads  Json?      @map("affected_roads")
+  nearbyVillages Json?      @map("nearby_villages")
+  lastUpdated    DateTime?  @map("last_updated")
+  modelVersion   String?    @map("model_version")
+  dataQuality    DataQuality @default(SIMULATED) @map("data_quality")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  predictions Prediction[]
+  alerts      Alert[]
+
+  @@index([state, district])
+  @@map("risk_zones")
+}
+
+model Prediction {
+  id               String    @id @default(uuid()) @db.Uuid
+  riskZoneId       String    @map("risk_zone_id") @db.Uuid
+  riskScore        Int       @map("risk_score")
+  riskLevel        RiskLevel @map("risk_level")
+  modelProbability  Float?   @map("model_probability")
+  topFactors       Json?     @map("top_factors")
+  modelVersion     String?   @map("model_version")
+  featureVersion   String?   @map("feature_version")
+  dataSources      Json?
+  inputFeatures    Json?     @map("input_features")
+  predictionTime   DateTime  @default(now()) @map("prediction_time")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  riskZone RiskZone @relation(fields: [riskZoneId], references: [id])
+
+  @@index([riskZoneId])
+  @@index([predictionTime])
+  @@map("predictions")
+}
+
+model WeatherData {
+  id           String      @id @default(uuid()) @db.Uuid
+  latitude     Float
+  longitude    Float
+  temperature  Float?
+  humidity     Float?
+  rainfall1h   Float?      @map("rainfall_1h")
+  rainfall6h   Float?      @map("rainfall_6h")
+  rainfall24h  Float?      @map("rainfall_24h")
+  rainfall72h  Float?      @map("rainfall_72h")
+  soilMoisture Float?      @map("soil_moisture")
+  weatherCode  Int?        @map("weather_code")
+  source       String      @default("open-meteo")
+  dataQuality  DataQuality @default(LIVE) @map("data_quality")
+  recordedAt   DateTime    @map("recorded_at")
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  @@index([latitude, longitude])
+  @@index([recordedAt])
+  @@map("weather_data")
+}
+
+model SensorData {
+  id           String      @id @default(uuid()) @db.Uuid
+  sensorId     String      @map("sensor_id")
+  latitude     Float
+  longitude    Float
+  soilMoisture Float?      @map("soil_moisture")
+  temperature  Float?
+  dataQuality  DataQuality @default(SIMULATED) @map("data_quality")
+  recordedAt   DateTime    @map("recorded_at")
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  @@index([sensorId])
+  @@index([recordedAt])
+  @@map("sensor_data")
+}
+
+model LandslideRecord {
+  id                   String      @id @default(uuid()) @db.Uuid
+  latitude             Float
+  longitude            Float
+  eventDate            DateTime    @map("event_date")
+  district             String
+  state                String
+  rainfallCondition    Float?      @map("rainfall_condition")
+  severity             String?
+  roadImpact           Boolean?    @default(false) @map("road_impact")
+  infrastructureImpact Boolean?    @default(false) @map("infrastructure_impact")
+  description          String?
+  source               String?
+  dataQuality          DataQuality @default(HISTORICAL) @map("data_quality")
+  createdAt            DateTime    @default(now()) @map("created_at")
+
+  @@index([state, district])
+  @@index([eventDate])
+  @@map("landslide_records")
+}
+
+model FieldReport {
+  id           String       @id @default(uuid()) @db.Uuid
+  userId       String       @map("user_id") @db.Uuid
+  latitude     Float
+  longitude    Float
+  incidentType IncidentType @map("incident_type")
+  description  String?
+  photoUrl     String?      @map("photo_url")
+  roadStatus   RoadStatus?  @map("road_status")
+  syncStatus   SyncStatus   @default(PENDING) @map("sync_status")
+  dataQuality  DataQuality  @default(LIVE) @map("data_quality")
+  submittedAt  DateTime     @default(now()) @map("submitted_at")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([submittedAt])
+  @@map("field_reports")
+}
+
+model Alert {
+  id                 String      @id @default(uuid()) @db.Uuid
+  riskZoneId         String      @map("risk_zone_id") @db.Uuid
+  riskScore          Int         @map("risk_score")
+  riskLevel          RiskLevel   @map("risk_level")
+  alertLevel         AlertLevel  @map("alert_level")
+  title              String
+  message            String?
+  contributingFactors Json?      @map("contributing_factors")
+  affectedRoad       String?     @map("affected_road")
+  affectedVillage    String?     @map("affected_village")
+  recommendedAction  String?     @map("recommended_action")
+  acknowledged       Boolean     @default(false)
+  acknowledgedBy     String?     @map("acknowledged_by")
+  acknowledgedAt     DateTime?   @map("acknowledged_at")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+
+  riskZone RiskZone @relation(fields: [riskZoneId], references: [id])
+
+  @@index([riskZoneId])
+  @@index([alertLevel])
+  @@index([createdAt])
+  @@map("alerts")
+}
+
+model Road {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String
+  roadNumber  String?    @map("road_number")
+  state       String
+  district    String
+  geometry    Json?
+  status      RoadStatus @default(UNKNOWN)
+  lastUpdated DateTime?  @map("last_updated")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  @@index([state, district])
+  @@map("roads")
+}
+
+model Village {
+  id         String  @id @default(uuid()) @db.Uuid
+  name       String
+  state      String
+  district   String
+  latitude   Float
+  longitude  Float
+  population Int?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([state, district])
+  @@map("villages")
+}
+
+model SatelliteObservation {
+  id              String      @id @default(uuid()) @db.Uuid
+  latitude        Float
+  longitude       Float
+  observationType String      @map("observation_type")
+  description     String?
+  changeDetected  Boolean?    @default(false) @map("change_detected")
+  imageUrl        String?     @map("image_url")
+  dataQuality     DataQuality @default(SIMULATED) @map("data_quality")
+  observedAt      DateTime    @map("observed_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@index([observedAt])
+  @@map("satellite_observations")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  title     String
+  message   String?
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @map("user_id")
+  action     String
+  resource   String?
+  resourceId String?  @map("resource_id")
+  details    Json?
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([userId])
+  @@map("audit_logs")
+}

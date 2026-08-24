@@ -601,14 +601,14 @@ The exact response schema should be finalized before frontend integration.
 
 ---
 
-# 24. MERN BACKEND
+# 24. NODE BACKEND
 
 Primary backend:
 
 Node.js
 Express.js
-MongoDB
-Mongoose
+PostgreSQL
+Prisma ORM
 
 Responsibilities:
 
@@ -669,9 +669,9 @@ CITIZEN:
 
 ---
 
-# 26. MONGODB COLLECTIONS
+# 26. POSTGRESQL TABLES
 
-Recommended collections:
+Recommended tables (defined as Prisma models):
 
 users
 risk_zones
@@ -686,6 +686,8 @@ villages
 satellite_observations
 notifications
 audit_logs
+
+Use PostGIS (geometry/geography types) for geospatial columns and queries.
 
 ---
 
@@ -719,7 +721,7 @@ lastUpdated,
 modelVersion
 }
 
-Use GeoJSON and MongoDB geospatial indexing where appropriate.
+Use GeoJSON and PostgreSQL PostGIS geospatial indexing where appropriate.
 
 ---
 
@@ -1054,7 +1056,9 @@ landslide-intelligence/
 ├── server/
 │   ├── controllers/
 │   ├── routes/
-│   ├── models/
+│   ├── prisma/
+│   │   ├── schema.prisma
+│   │   └── migrations/
 │   ├── services/
 │   ├── middleware/
 │   ├── utils/
@@ -1252,7 +1256,7 @@ Any coding agent working on this project must follow these rules:
 2. Do not rewrite the entire project unnecessarily.
 3. Do not change the architecture without explaining why.
 4. Do not introduce TypeScript if the project is intentionally JavaScript-based unless explicitly requested.
-5. Keep MERN as the primary application stack.
+5. Keep Node/Express + PostgreSQL as the primary application stack.
 6. Keep ML isolated in Python/FastAPI.
 7. Do not fabricate scientific data.
 8. Do not fabricate ML accuracy.
@@ -1283,14 +1287,14 @@ No major coding until this is established.
 
 ---
 
-# PHASE 1 — MERN FOUNDATION
+# PHASE 1 — NODE + POSTGRESQL FOUNDATION
 
 Build:
 
 React
 Node
 Express
-MongoDB
+PostgreSQL (Prisma)
 
 Implement:
 
@@ -1590,7 +1594,7 @@ Do NOT start with:
 
 First build:
 
-MERN
+Node + Express + PostgreSQL
 +
 GIS
 +
@@ -1710,7 +1714,7 @@ ML:
 Integration:
 
 React → Express
-Express → MongoDB
+Express → PostgreSQL (Prisma)
 Express → FastAPI
 FastAPI → Model
 
@@ -1730,7 +1734,7 @@ ML service:
 Render / Railway / containerized service
 
 Database:
-MongoDB Atlas
+PostgreSQL (Neon / Supabase / Railway / Render, or managed Postgres)
 
 Object/file storage:
 Cloud storage provider
@@ -1748,7 +1752,7 @@ VITE_API_URL
 Backend:
 
 PORT
-MONGODB_URI
+DATABASE_URL
 JWT_SECRET
 ML_SERVICE_URL
 WEATHER_API_KEY
@@ -1872,8 +1876,8 @@ The target architecture is:
                 ┌──────────┴──────────┐
                 ▼                     ▼
          ┌─────────────┐       ┌──────────────┐
-         │ MongoDB     │       │ ML Pipeline  │
-         │ Geo Data    │       │ Python       │
+         │ PostgreSQL  │       │ ML Pipeline  │
+         │ PostGIS     │       │ Python       │
          └─────────────┘       └──────┬───────┘
                                       │
                                       ▼
@@ -1928,8 +1932,8 @@ Lucide
 
 Node.js
 Express.js
-MongoDB
-Mongoose
+PostgreSQL
+Prisma ORM
 JWT
 
 ## AI/ML
@@ -1970,7 +1974,7 @@ IndexedDB / local storage / SQLite depending on implementation
 
 Vercel
 Render/Railway
-MongoDB Atlas
+PostgreSQL (Neon / Supabase)
 Docker where useful
 
 ---

@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Generated ML artifacts (can be regenerated via data + training)
+# datasets are demo-generated; model artifacts are derived.
+data/dataset.csv
+data/dataset_meta.json
+models/*.joblib
+models/*.json
+*.log
+
+# Local config
+.env

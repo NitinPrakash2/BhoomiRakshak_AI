@@ -1,0 +1,11 @@
+# BhoomiRakshak ML Service dependencies
+# Aligned with MASTER_DOCUMENTATION.md Section 22/62
+pandas
+numpy
+scikit-learn
+xgboost
+shap
+joblib
+fastapi
+uvicorn[standard]
+pydantic
